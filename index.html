@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>سامانه ارزیابی خوابگاه پسرانه درگز</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
         body { background: #f0f4f8; margin: 0; padding: 10px; direction: rtl; font-size: 15px; color: #1e2b3c; font-weight: 500; }
@@ -30,10 +30,6 @@
         .user-bar .info .un { font-size: 13px; font-weight: 600; opacity: 0.95; }
         .user-bar .btn-logout { background: #ffb347; color: #1e2b3c; border: none; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; }
         .user-bar .btn-logout:active { background: #f59e0b; }
-
-        .selector-box { background: #eef4fa; padding: 14px; border-radius: 12px; margin-bottom: 16px; border: 2px solid #1e3a5f; }
-        .selector-box label { font-weight: 800; color: #1e3a5f; display: block; margin-bottom: 8px; font-size: 16px; }
-        .selector-box select { width: 100%; padding: 14px 12px; border-radius: 10px; border: 2px solid #1e3a5f; font-size: 17px; font-weight: 700; color: #1e3a5f; background: #fff; cursor: pointer; }
 
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 18px; font-size: 14px; border: 1px solid #e2e8f0; }
         .info-item { display: flex; justify-content: space-between; background: #fff; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
@@ -66,12 +62,9 @@
         .grand-total-box { background: #e8f0fe; padding: 18px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 17px; margin-top: 20px; border: 2px solid #1e3a5f; }
         .grand-total-box span:last-child { font-size: 26px; color: #1e3a5f; }
 
-        .btn-submit { background: #1e3a5f; color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 18px; font-weight: 800; width: 100%; margin-top: 18px; cursor: pointer; }
-        .btn-submit:active { background: #0b2a44; }
-        .btn-pdf { background: #2e7d32; color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 18px; font-weight: 800; width: 100%; margin-top: 10px; cursor: pointer; display: none; }
-        .btn-pdf:active { background: #1b5e20; }
-        .btn-bale { background: #007bff; color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 18px; font-weight: 800; width: 100%; margin-top: 10px; cursor: pointer; display: none; text-decoration: none; text-align: center; }
-        .btn-bale:active { background: #0056b3; }
+        .btn-excel { background: #1e7e34; color: #fff; border: none; padding: 18px; border-radius: 12px; font-size: 18px; font-weight: 800; width: 100%; margin-top: 18px; cursor: pointer; }
+        .btn-excel:active { background: #155724; }
+        .btn-excel:disabled { background: #94a3b8; cursor: not-allowed; }
 
         .hint { font-size: 14px; font-weight: 700; color: #b45309; background: #fff7e6; padding: 12px 14px; border-radius: 10px; margin-top: 14px; border-right: 5px solid #b45309; }
         .footer { font-size: 12px; color: #64748b; text-align: center; margin-top: 16px; font-weight: 600; }
@@ -88,6 +81,7 @@
 </head>
 <body>
 
+<!-- ==================== صفحه ورود ==================== -->
 <div id="loginScreen" class="container">
     <div class="login-card">
         <h1>🔐 ورود به سامانه ارزیابی</h1>
@@ -97,10 +91,11 @@
             <option value="">— لطفاً نام خود را انتخاب کنید —</option>
         </select>
         <button class="btn-login" id="loginBtn" onclick="login()" disabled>ورود به سامانه</button>
-        <div class="login-note">پس از ورود، می‌توانید فرم ارزیابی خوابگاه را تکمیل کنید.</div>
+        <div class="login-note">پس از ورود، فرم ارزیابی خوابگاه را تکمیل کنید.</div>
     </div>
 </div>
 
+<!-- ==================== صفحه ارزیابی ==================== -->
 <div id="evalScreen" class="container" style="display:none;">
     <h1>فرم اعتباربخشی خوابگاه پسرانه درگز</h1>
     <div class="subtitle">مرکز آموزش عالی فوریت‌های پزشکی</div>
@@ -109,67 +104,43 @@
         <div class="info">
             <span class="lbl">ارزیاب فعلی</span>
             <span class="nm" id="currentEvaluatorName">—</span>
-            <span class="un" id="currentEvaluatorUni">—</span>
+            <span class="un" id="currentEvaluatorRole">—</span>
         </div>
         <button class="btn-logout" onclick="logout()">🔄 تغییر کاربر</button>
     </div>
 
-    <div class="selector-box">
-        <label for="dormSelect">🏠 خوابگاه مورد ارزیابی</label>
-        <select id="dormSelect" onchange="loadDormitory(this.value)">
-            <option value="">— لطفاً انتخاب کنید —</option>
-        </select>
-    </div>
-
-    <div id="dormInfo" class="info-grid" style="display:none;">
-        <div class="info-item"><span class="lbl">نام دانشگاه</span><span class="val" id="infoUni">—</span></div>
-        <div class="info-item"><span class="lbl">نام خوابگاه</span><span class="val" id="infoDorm">—</span></div>
-        <div class="info-item"><span class="lbl">نوع</span><span class="val" id="infoType">—</span></div>
-        <div class="info-item"><span class="lbl">مالکیت</span><span class="val" id="infoOwn">—</span></div>
-        <div class="info-item"><span class="lbl">مدیریت</span><span class="val" id="infoMgmt">—</span></div>
-        <div class="info-item"><span class="lbl">ظرفیت / ساکن</span><span class="val" id="infoFamilies">—</span></div>
+    <div class="info-grid">
+        <div class="info-item"><span class="lbl">نام دانشگاه</span><span class="val">مرکز آموزش عالی فوریت‌های پزشکی</span></div>
+        <div class="info-item"><span class="lbl">نام خوابگاه</span><span class="val">خوابگاه پسرانه درگز</span></div>
+        <div class="info-item"><span class="lbl">نوع</span><span class="val">مجردی — پسرانه</span></div>
+        <div class="info-item"><span class="lbl">مالکیت</span><span class="val">ملکی</span></div>
+        <div class="info-item"><span class="lbl">مدیریت</span><span class="val">دولتی</span></div>
+        <div class="info-item"><span class="lbl">ظرفیت / ساکن</span><span class="val">۸۰ نفر ظرفیت / ۱۰ نفر ساکن</span></div>
     </div>
 
     <div id="formContainer"></div>
 
-    <div id="grandTotalBox" class="grand-total-box" style="display:none;">
+    <div class="grand-total-box">
         <span>جمع کل امتیاز کسب‌شده (از ۱۰۰۰)</span>
         <span id="grand-total">۰</span>
     </div>
 
-    <div id="hintBox" class="hint" style="display:none;">⚠️ در صورت مغایرت بین خوداظهاری و نمره ارزیاب، وارد کردن «علت مغایرت» الزامی است.</div>
+    <div class="hint">⚠️ در صورت مغایرت بین خوداظهاری و نمره ارزیاب، وارد کردن «علت مغایرت» الزامی است.</div>
 
-    <button id="submitBtn" class="btn-submit" style="display:none;" onclick="submitForm()">ثبت و ارسال فرم</button>
-    <button id="pdfBtn" class="btn-pdf" onclick="generatePDF()">📄 دانلود گزارش PDF</button>
-    <a id="baleBtn" class="btn-bale" href="https://ble.ir/mums405" target="_blank">📤 ارسال به بله (خانم ابراهیمی)</a>
+    <button id="excelBtn" class="btn-excel" onclick="exportExcel()">📊 دانلود فایل اکسل حرفه‌ای</button>
 
     <div class="footer">سامانه اعتباربخشی خوابگاه دانشجویی — نسخه ارزیاب درگز</div>
 </div>
 
-<div id="pdfContainer" style="display:none; padding: 20px; background: white; direction: rtl;"></div>
-
 <script>
-// ============ لیست ارزیاب‌ها (فقط دو نفر برای درگز) ============
+// ============ ارزیاب‌ها ============
 const EVALUATORS = [
-    { name: 'بهزاد سرداری', uni: 'ارزیاب خوابگاه پسرانه درگز' },
-    { name: 'میثم نقوی مقدم', uni: 'ارزیاب خوابگاه پسرانه درگز' }
+    { name: 'بهزاد سرداری', role: 'رئیس اداره خوابگاه‌ها' },
+    { name: 'میثم نقوی مقدم', role: 'مسئول خوابگاه برادران' }
 ];
 
-// ============ داده‌های خوابگاه (فقط درگز) ============
-const DORMS = [
-    {
-        id: 'dargaz',
-        name: 'خوابگاه پسرانه فوریت‌های پزشکی درگز',
-        type: 'مجردی',
-        ownership: 'ملکی',
-        mgmt: 'دولتی',
-        units: '—',
-        families: '۸۰ نفر ظرفیت / ۱۰ نفر ساکن'
-    }
-];
-
-// ============ شاخص‌های مجردی — خوابگاه پسرانه درگز ============
-const SECTIONS_MOJARAD = [
+// ============ شاخص‌های خوابگاه مجردی — درگز ============
+const SECTIONS = [
     { title: '۱- استحکام بنا', weight: '۱۰۰ امتیاز', items: [
         { sub: '۱-۱ تأیید فنی ساختمان', w: 5, self: 0, options: [{label:'ندارد', value:0}, {label:'دارد', value:4}] },
         { sub: '۲-۱ پایداری لرزه‌ای', w: 5, self: 0, options: [{label:'ندارد', value:0}, {label:'دارد', value:4}] },
@@ -273,114 +244,50 @@ const SECTIONS_MOJARAD = [
 ];
 
 let currentEvaluator = null;
-let lastSubmittedData = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    initEvaluators();
-    initDormSelect();
-});
-
-function initEvaluators() {
     const select = document.getElementById('evaluatorSelect');
     EVALUATORS.forEach((ev, idx) => {
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.textContent = `${ev.name} — ${ev.uni}`;
+        opt.textContent = `${ev.name} — ${ev.role}`;
         select.appendChild(opt);
     });
-}
+});
 
 function checkLoginReady() {
-    const val = document.getElementById('evaluatorSelect').value;
-    document.getElementById('loginBtn').disabled = (val === '');
+    document.getElementById('loginBtn').disabled = (document.getElementById('evaluatorSelect').value === '');
 }
 
 function login() {
     const idx = document.getElementById('evaluatorSelect').value;
     if (idx === '') return;
-    const evaluator = EVALUATORS[parseInt(idx)];
-    if (!evaluator) return;
-    currentEvaluator = evaluator;
-    document.getElementById('currentEvaluatorName').textContent = evaluator.name;
-    document.getElementById('currentEvaluatorUni').textContent = evaluator.uni;
+    currentEvaluator = EVALUATORS[parseInt(idx)];
+    if (!currentEvaluator) return;
+    document.getElementById('currentEvaluatorName').textContent = currentEvaluator.name;
+    document.getElementById('currentEvaluatorRole').textContent = currentEvaluator.role;
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('evalScreen').style.display = 'block';
+    renderForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function logout() {
     if (!confirm('آیا می‌خواهید از حساب کاربری خارج شوید؟ (اطلاعات پر شده پاک خواهد شد)')) return;
     currentEvaluator = null;
-    lastSubmittedData = null;
     document.getElementById('evalScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'block';
-    document.getElementById('dormSelect').value = '';
     document.getElementById('formContainer').innerHTML = '';
-    document.getElementById('dormInfo').style.display = 'none';
-    document.getElementById('grandTotalBox').style.display = 'none';
-    document.getElementById('hintBox').style.display = 'none';
-    document.getElementById('submitBtn').style.display = 'none';
-    document.getElementById('pdfBtn').style.display = 'none';
-    document.getElementById('baleBtn').style.display = 'none';
     document.getElementById('evaluatorSelect').value = '';
     document.getElementById('loginBtn').disabled = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function initDormSelect() {
-    const select = document.getElementById('dormSelect');
-    DORMS.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.id;
-        opt.textContent = `${d.name} — ${d.type}`;
-        select.appendChild(opt);
-    });
-}
-
-function loadDormitory(id) {
-    const dorm = DORMS.find(d => d.id === id);
-    const infoBox = document.getElementById('dormInfo');
-    const formContainer = document.getElementById('formContainer');
-    const grandBox = document.getElementById('grandTotalBox');
-    const hintBox = document.getElementById('hintBox');
-    const submitBtn = document.getElementById('submitBtn');
-    const pdfBtn = document.getElementById('pdfBtn');
-    const baleBtn = document.getElementById('baleBtn');
-
-    if (!dorm) {
-        infoBox.style.display = 'none';
-        formContainer.innerHTML = '';
-        grandBox.style.display = 'none';
-        hintBox.style.display = 'none';
-        submitBtn.style.display = 'none';
-        pdfBtn.style.display = 'none';
-        baleBtn.style.display = 'none';
-        return;
-    }
-
-    document.getElementById('infoUni').textContent = 'مرکز آموزش عالی فوریت‌های پزشکی';
-    document.getElementById('infoDorm').textContent = dorm.name;
-    document.getElementById('infoType').textContent = dorm.type;
-    document.getElementById('infoOwn').textContent = dorm.ownership;
-    document.getElementById('infoMgmt').textContent = dorm.mgmt;
-    document.getElementById('infoFamilies').textContent = dorm.families;
-    infoBox.style.display = 'grid';
-
-    const sections = SECTIONS_MOJARAD;
-    renderForm(dorm, sections);
-
-    grandBox.style.display = 'flex';
-    hintBox.style.display = 'block';
-    submitBtn.style.display = 'block';
-    pdfBtn.style.display = 'none';
-    baleBtn.style.display = 'none';
-}
-
-function renderForm(dorm, sections) {
+function renderForm() {
     const formContainer = document.getElementById('formContainer');
     formContainer.innerHTML = '';
 
-    sections.forEach((sec, secIdx) => {
+    SECTIONS.forEach((sec, secIdx) => {
         const acc = document.createElement('div');
         acc.className = 'accordion';
 
@@ -420,7 +327,7 @@ function renderForm(dorm, sections) {
                         ${optionsHtml}
                     </select>
                 </div>
-                <input type="text" class="reason-input" placeholder="علت مغایرت را وارد کنید..." oninput="checkReason(this)">
+                <input type="text" class="reason-input" placeholder="علت مغایرت را وارد کنید...">
             `;
             cardList.appendChild(card);
         });
@@ -481,16 +388,6 @@ function onScoreChange(select) {
     calculateAllTotals();
 }
 
-function checkReason(input) {
-    if (input.value.trim() !== '') {
-        input.style.borderColor = '#2e7d32';
-        input.style.backgroundColor = '#f1f8e9';
-    } else {
-        input.style.borderColor = '#e2b04a';
-        input.style.backgroundColor = '#fffcf0';
-    }
-}
-
 function calculateAllTotals() {
     const accordions = document.querySelectorAll('.accordion');
     let grand = 0;
@@ -522,16 +419,14 @@ function formatNumber(num) {
     return parts.join('.');
 }
 
-function submitForm() {
+// ============ خروجی اکسل حرفه‌ای ============
+function exportExcel() {
     if (!currentEvaluator) {
         alert('لطفاً ابتدا وارد سامانه شوید.');
         return;
     }
 
-    const dormId = document.getElementById('dormSelect').value;
-    const dorm = DORMS.find(d => d.id === dormId);
-    if (!dorm) { alert('لطفاً خوابگاه را انتخاب کنید.'); return; }
-
+    // بررسی خالی بودن نمرات
     let unfilled = 0;
     document.querySelectorAll('.score-select').forEach(sel => {
         if (sel.value === '') unfilled++;
@@ -540,257 +435,206 @@ function submitForm() {
         if (!confirm(`⚠️ ${unfilled} مورد از نمرات ارزیاب انتخاب نشده است. ادامه می‌دهید؟`)) return;
     }
 
+    // بررسی علت مغایرت
     let isValid = true;
-    const missingReasons = [];
+    const missing = [];
     document.querySelectorAll('.item-card.discrepancy').forEach(card => {
         const reasonInput = card.querySelector('.reason-input');
         if (!reasonInput.value.trim()) {
             isValid = false;
             reasonInput.style.borderColor = '#d32f2f';
             reasonInput.style.backgroundColor = '#ffebee';
-            const title = card.querySelector('.item-title span')?.textContent || 'نامشخص';
-            missingReasons.push(title);
+            missing.push(card.querySelector('.item-title span')?.textContent || '');
         }
     });
     if (!isValid) {
-        alert('لطفاً برای موارد مغایرت، علت را وارد کنید:\n' + missingReasons.join('\n'));
+        alert('لطفاً برای موارد مغایرت، علت را وارد کنید:\n' + missing.join('\n'));
         return;
     }
 
-    const confirmMsg = "آیا مایلید فرم را برای ارسال به خانم ابراهیمی (کارشناس اداره خوابگاه‌ها) تایید کنید؟\n\nبا تایید، فایل PDF ساخته شده و منوی ارسال باز می‌شود.";
-    if (!confirm(confirmMsg)) return;
-
-    lastSubmittedData = {
-        evaluator: { name: currentEvaluator.name, university: currentEvaluator.uni },
-        dormitory: { id: dorm.id, name: dorm.name, type: dorm.type },
-        total: document.getElementById('grand-total').textContent,
-        submittedAt: new Date().toISOString(),
-        scores: []
-    };
-
+    // جمع‌آوری داده‌ها
+    const scores = [];
+    let grandTotal = 0;
     document.querySelectorAll('.score-select').forEach(sel => {
         const card = sel.closest('.item-card');
         const subItem = card.querySelector('.item-title span')?.textContent?.trim() || '';
         const selfScore = parseFloat(sel.dataset.self) || 0;
-        const assessorScore = sel.value === '' ? null : parseFloat(sel.value);
+        const assessorScore = sel.value === '' ? '' : parseFloat(sel.value);
         const reason = card.querySelector('.reason-input')?.value || '';
         const weight = parseFloat(sel.dataset.weight) || 0;
-        lastSubmittedData.scores.push({ subItem, weight, selfScore, assessorScore, reason, weightedScore: (assessorScore || 0) * weight });
+        const weightedScore = (assessorScore === '' ? 0 : assessorScore) * weight;
+        grandTotal += weightedScore;
+        scores.push({ subItem, weight, selfScore, assessorScore, reason, weightedScore });
     });
 
-    const data = lastSubmittedData;
-    const pdfContainer = document.getElementById('pdfContainer');
+    const dateStr = new Date().toLocaleDateString('fa-IR');
 
-    let tableRows = '';
-    data.scores.forEach((s, index) => {
-        const assessorScore = s.assessorScore === null ? '—' : s.assessorScore;
-        const reason = s.reason ? s.reason : '—';
-        const rowColor = s.reason ? '#fffcf0' : '#fff';
-        tableRows += `
-            <tr style="background-color: ${rowColor}; border-bottom: 1px solid #ddd;">
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${index + 1}</td>
-                <td style="padding: 8px; text-align: right; border: 1px solid #ccc; font-size: 12px;">${s.subItem}</td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${s.weight}</td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${s.selfScore}</td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc; font-weight: bold; color: #1e3a5f;">${assessorScore}</td>
-                <td style="padding: 8px; text-align: right; border: 1px solid #ccc; font-size: 11px;">${reason}</td>
-            </tr>
-        `;
+    // ===== ساخت Workbook =====
+    const wb = XLSX.utils.book_new();
+
+    // ---- شیت ۱: فرم ارزیابی ----
+    const ws1Data = [];
+
+    // سربرگ عنوان
+    ws1Data.push(['گزارش ارزیابی خوابگاه پسرانه فوریت‌های پزشکی درگز']);
+    ws1Data.push([]);
+    ws1Data.push(['نام دانشگاه:', 'مرکز آموزش عالی فوریت‌های پزشکی', '', 'تاریخ:', dateStr]);
+    ws1Data.push(['نام خوابگاه:', 'خوابگاه پسرانه درگز', '', 'نوع:', 'مجردی — پسرانه']);
+    ws1Data.push(['نام ارزیاب:', currentEvaluator.name, '', 'سمت:', currentEvaluator.role]);
+    ws1Data.push([]);
+    ws1Data.push(['ردیف', 'عنوان شاخص', 'وزن', 'خوداظهاری', 'نمره ارزیاب', 'امتیاز وزنی', 'علت مغایرت']);
+
+    let rowNum = 1;
+    scores.forEach((s) => {
+        ws1Data.push([
+            rowNum++,
+            s.subItem,
+            s.weight,
+            s.selfScore,
+            s.assessorScore === '' ? '—' : s.assessorScore,
+            s.weightedScore,
+            s.reason || '—'
+        ]);
     });
 
-    const pdfHTML = `
-        <div style="font-family: Tahoma, Arial, sans-serif; direction: rtl; max-width: 800px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 10px;">
-                <h2 style="color: #1e3a5f; margin: 0; font-size: 20px;">گزارش ارزیابی خوابگاه پسرانه درگز</h2>
-                <p style="color: #4a5b6e; margin: 5px 0 0 0; font-size: 14px;">مرکز آموزش عالی فوریت‌های پزشکی</p>
-            </div>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc; width: 25%;"><strong>نام ارزیاب:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${data.evaluator.name}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc; width: 25%;"><strong>سمت:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${data.evaluator.university}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc;"><strong>نام خوابگاه:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${data.dormitory.name}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc;"><strong>نوع خوابگاه:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${data.dormitory.type}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc;"><strong>تاریخ ثبت:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;" colspan="3">${new Date(data.submittedAt).toLocaleString('fa-IR')}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #e8f0fe; font-size: 16px; font-weight: bold;">جمع کل امتیاز:</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; font-size: 16px; font-weight: bold; color: #1e3a5f;" colspan="3">${data.total} از ۱۰۰۰</td>
-                </tr>
-            </table>
-            <h3 style="color: #1e3a5f; font-size: 16px; margin-bottom: 10px;">جزئیات نمرات:</h3>
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                <thead>
-                    <tr style="background-color: #1e3a5f; color: white;">
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 5%;">#</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 40%;">عنوان شاخص</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 10%;">وزن</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 10%;">خوداظهاری</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 10%;">نمره ارزیاب</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 25%;">علت مغایرت</th>
-                    </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-            <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #64748b;">
-                این گزارش به صورت خودکار توسط سامانه اعتباربخشی خوابگاه‌های دانشجویی تولید شده است.
-            </div>
-        </div>
-    `;
+    ws1Data.push([]);
+    ws1Data.push(['', 'جمع کل امتیاز (از ۱۰۰۰):', '', '', '', grandTotal, '']);
+    ws1Data.push([]);
+    ws1Data.push([]);
+    ws1Data.push(['', 'امضای ارزیاب:', '', '', 'تاریخ:', dateStr]);
+    ws1Data.push(['', currentEvaluator.name, '', '', '']);
+    ws1Data.push(['', currentEvaluator.role, '', '', '']);
 
-    pdfContainer.innerHTML = pdfHTML;
+    const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
 
-    const opt = {
-        margin: 10,
-        filename: `گزارش_ارزیابی_درگز_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+    // تنظیم عرض ستون‌ها
+    ws1['!cols'] = [
+        { wch: 6 },   // ردیف
+        { wch: 50 },  // عنوان
+        { wch: 8 },   // وزن
+        { wch: 12 },  // خوداظهاری
+        { wch: 12 },  // نمره ارزیاب
+        { wch: 14 },  // امتیاز وزنی
+        { wch: 35 }   // علت مغایرت
+    ];
 
-    const btn = document.getElementById('submitBtn');
-    const originalText = btn.textContent;
-    btn.textContent = '⏳ در حال ساخت گزارش...';
-    btn.disabled = true;
+    // ادغام سلول‌ها
+    ws1['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },   // عنوان اصلی
+        { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },   // نام دانشگاه
+        { s: { r: 4, c: 1 }, e: { r: 4, c: 2 } },   // نام خوابگاه
+        { s: { r: 5, c: 1 }, e: { r: 5, c: 2 } },   // نام ارزیاب
+    ];
 
-    html2pdf().set(opt).from(pdfContainer).outputPdf('blob').then(blob => {
-        const file = new File([blob], opt.filename, { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({
-                files: [file],
-                title: 'ارسال گزارش به بله',
-                text: 'لطفاً این فایل PDF را برای خانم ابراهیمی در بله ارسال نمایید.'
-            }).then(() => {
-                document.getElementById('dormSelect').value = '';
-                loadDormitory('');
-            }).catch(err => {
-                console.log('خطا در اشتراک‌گذاری:', err);
-                downloadFallback(blob, opt.filename);
-            });
-        } else {
-            downloadFallback(blob, opt.filename);
-        }
-    }).finally(() => {
-        btn.textContent = originalText;
-        btn.disabled = false;
+    // ===== استایل‌ها (با استفاده از کتابخانه xlsx-js-style در صورت وجود) =====
+    // اگر کتابخانه استایل موجود نبود، فقط داده‌ها به‌درستی ذخیره می‌شوند.
+
+    // ---- شیت ۲: خلاصه بخش‌ها ----
+    const ws2Data = [];
+    ws2Data.push(['خلاصه امتیازات به تفکیک بخش']);
+    ws2Data.push([]);
+    ws2Data.push(['بخش', 'عنوان', 'حداکثر امتیاز', 'امتیاز کسب‌شده', 'درصد', 'وضعیت']);
+
+    const sectionMax = [100, 136, 80, 64, 174, 184, 204, 58];
+    const sectionTitles = [
+        'استحکام بنا',
+        'تأسیسات مکانیکی',
+        'تأسیسات برق',
+        'آسانسور و خروج اضطراری',
+        'ایمنی و بهداشت',
+        'طراحی خوابگاه',
+        'امکانات رفاهی',
+        'امنیت و مدیریت'
+    ];
+
+    // محاسبه امتیاز هر بخش
+    const sectionScores = [];
+    let idx = 0;
+    SECTIONS.forEach((sec) => {
+        let sum = 0;
+        sec.items.forEach(item => {
+            const sel = document.querySelectorAll('.accordion')[idx].querySelectorAll('.score-select');
+            // find the correct select by matching sub
+        });
     });
 
-    function downloadFallback(blob, filename) {
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        alert(`✅ فرم با موفقیت ثبت شد و فایل گزارش دانلود گردید.\n\nلطفاً فایل را برای خانم ابراهیمی در بله ارسال نمایید.`);
-        document.getElementById('pdfBtn').style.display = 'block';
-        document.getElementById('baleBtn').style.display = 'block';
-        document.getElementById('dormSelect').value = '';
-        loadDormitory('');
-    }
-}
+    // محاسبه مستقیم از روی DOM
+    const accs = document.querySelectorAll('.accordion');
+    accs.forEach((acc, i) => {
+        let sum = 0;
+        acc.querySelectorAll('.score-select').forEach(sel => {
+            const w = parseFloat(sel.dataset.weight) || 0;
+            const s = sel.value === '' ? 0 : parseFloat(sel.value);
+            sum += s * w;
+        });
+        sectionScores.push(sum);
+    });
 
-function generatePDF() {
-    if (!lastSubmittedData) {
-        alert("داده‌ای برای ساخت PDF یافت نشد. لطفاً ابتدا فرم را ثبت کنید.");
-        return;
-    }
-    const data = lastSubmittedData;
-    const pdfContainer = document.getElementById('pdfContainer');
-    let tableRows = '';
-    data.scores.forEach((s, index) => {
-        const assessorScore = s.assessorScore === null ? '—' : s.assessorScore;
-        const reason = s.reason ? s.reason : '—';
-        const rowColor = s.reason ? '#fffcf0' : '#fff';
-        tableRows += `
-            <tr style="background-color: ${rowColor}; border-bottom: 1px solid #ddd;">
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${index + 1}</td>
-                <td style="padding: 8px; text-align: right; border: 1px solid #ccc; font-size: 12px;">${s.subItem}</td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${s.weight}</td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc;">${s.selfScore}</td>
-                <td style="padding: 8px; text-align: center; border: 1px solid #ccc; font-weight: bold; color: #1e3a5f;">${assessorScore}</td>
-                <td style="padding: 8px; text-align: right; border: 1px solid #ccc; font-size: 11px;">${reason}</td>
-            </tr>
-        `;
+    sectionTitles.forEach((title, i) => {
+        const max = sectionMax[i];
+        const score = sectionScores[i] || 0;
+        const percent = max > 0 ? (score / max) : 0;
+        let status = 'ضعیف';
+        if (percent >= 0.8) status = 'عالی';
+        else if (percent >= 0.6) status = 'خوب';
+        else if (percent >= 0.4) status = 'متوسط';
+        ws2Data.push([
+            i + 1,
+            title,
+            max,
+            Math.round(score * 100) / 100,
+            (percent * 100).toFixed(1) + '%',
+            status
+        ]);
     });
-    const pdfHTML = `
-        <div style="font-family: Tahoma, Arial, sans-serif; direction: rtl; max-width: 800px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a5f; padding-bottom: 10px;">
-                <h2 style="color: #1e3a5f; margin: 0; font-size: 20px;">گزارش ارزیابی خوابگاه پسرانه درگز</h2>
-                <p style="color: #4a5b6e; margin: 5px 0 0 0; font-size: 14px;">مرکز آموزش عالی فوریت‌های پزشکی</p>
-            </div>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc; width: 25%;"><strong>نام ارزیاب:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${data.evaluator.name}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc; width: 25%;"><strong>سمت:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${data.evaluator.university}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc;"><strong>نام خوابگاه:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${data.dormitory.name}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc;"><strong>نوع خوابگاه:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${data.dormitory.type}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #f8fafc;"><strong>تاریخ ثبت:</strong></td>
-                    <td style="padding: 8px; border: 1px solid #ddd;" colspan="3">${new Date(data.submittedAt).toLocaleString('fa-IR')}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ddd; background: #e8f0fe; font-size: 16px; font-weight: bold;">جمع کل امتیاز:</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; font-size: 16px; font-weight: bold; color: #1e3a5f;" colspan="3">${data.total} از ۱۰۰۰</td>
-                </tr>
-            </table>
-            <h3 style="color: #1e3a5f; font-size: 16px; margin-bottom: 10px;">جزئیات نمرات:</h3>
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                <thead>
-                    <tr style="background-color: #1e3a5f; color: white;">
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 5%;">#</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 40%;">عنوان شاخص</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 10%;">وزن</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 10%;">خوداظهاری</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 10%;">نمره ارزیاب</th>
-                        <th style="padding: 10px; border: 1px solid #ccc; width: 25%;">علت مغایرت</th>
-                    </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-            <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #64748b;">
-                این گزارش به صورت خودکار توسط سامانه اعتباربخشی خوابگاه‌های دانشجویی تولید شده است.
-            </div>
-        </div>
-    `;
-    pdfContainer.innerHTML = pdfHTML;
-    const opt = {
-        margin: 10,
-        filename: `گزارش_ارزیابی_درگز_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    const btn = document.getElementById('pdfBtn');
-    const originalText = btn.textContent;
-    btn.textContent = '⏳ در حال ساخت PDF...';
-    btn.disabled = true;
-    html2pdf().set(opt).from(pdfContainer).save().then(() => {
-        btn.textContent = originalText;
-        btn.disabled = false;
-    }).catch(err => {
-        console.error(err);
-        alert('خطا در ساخت PDF. لطفاً دوباره تلاش کنید.');
-        btn.textContent = originalText;
-        btn.disabled = false;
-    });
+
+    ws2Data.push([]);
+    ws2Data.push(['', 'جمع کل', 1000, Math.round(grandTotal * 100) / 100, ((grandTotal / 1000) * 100).toFixed(1) + '%', '']);
+
+    const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+    ws2['!cols'] = [
+        { wch: 6 },
+        { wch: 35 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 10 },
+        { wch: 12 }
+    ];
+    ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
+
+    // ---- شیت ۳: اطلاعات خوابگاه ----
+    const ws3Data = [
+        ['اطلاعات خوابگاه'],
+        [],
+        ['نام دانشگاه', 'مرکز آموزش عالی فوریت‌های پزشکی'],
+        ['نام خوابگاه', 'خوابگاه پسرانه درگز'],
+        ['نوع کاربری', 'مجردی — پسرانه'],
+        ['نوع مالکیت', 'ملکی'],
+        ['نوع مدیریت', 'دولتی'],
+        ['ظرفیت', '۸۰ نفر'],
+        ['تعداد ساکن', '۱۰ نفر'],
+        ['زیرمجموعه', 'اقماری'],
+        ['نوع طراحی', 'راهرویی (غیرسوئیتی)'],
+        ['موقعیت', 'داخل پردیس دانشکده'],
+        [],
+        ['ارزیاب اول', 'بهزاد سرداری — رئیس اداره خوابگاه‌ها'],
+        ['ارزیاب دوم', 'میثم نقوی مقدم — مسئول خوابگاه برادران'],
+        ['تاریخ ارزیابی', dateStr]
+    ];
+    const ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
+    ws3['!cols'] = [{ wch: 25 }, { wch: 50 }];
+    ws3['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+
+    // افزودن شیت‌ها
+    XLSX.utils.book_append_sheet(wb, ws1, 'فرم ارزیابی');
+    XLSX.utils.book_append_sheet(wb, ws2, 'خلاصه بخش‌ها');
+    XLSX.utils.book_append_sheet(wb, ws3, 'اطلاعات خوابگاه');
+
+    // دانلود
+    const filename = `ارزیابی_خوابگاه_درگز_${dateStr.replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(wb, filename);
+
+    alert(`✅ فایل اکسل با موفقیت ساخته و دانلود شد.\n\nنام فایل: ${filename}`);
 }
 </script>
 </body>
