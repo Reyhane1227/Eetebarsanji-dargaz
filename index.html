@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>سامانه ارزیابی خوابگاه پسرانه درگز</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
         body { background: #f0f4f8; margin: 0; padding: 10px; direction: rtl; font-size: 15px; color: #1e2b3c; font-weight: 500; }
@@ -18,7 +18,7 @@
         .login-card .login-sub { text-align: center; font-size: 14px; color: #4a5b6e; margin-bottom: 22px; font-weight: 600; }
         .login-card label { display: block; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; font-size: 16px; }
         .login-card select { width: 100%; padding: 14px 12px; border-radius: 10px; border: 2px solid #1e3a5f; font-size: 16px; font-weight: 700; color: #1e3a5f; background: #fff; cursor: pointer; margin-bottom: 18px; }
-        .login-card .btn-login { background: #1e3a5f; color: #fff; border: none; padding: 16px; border-radius: 12px; font-size: 17px; font-weight: 800; width: 100%; cursor: pointer; transition: 0.2s; }
+        .login-card .btn-login { background: #1e3a5f; color: #fff; border: none; padding: 16px; border-radius: 12px; font-size: 17px; font-weight: 800; width: 100%; cursor: pointer; }
         .login-card .btn-login:active { background: #0b2a44; }
         .login-card .btn-login:disabled { background: #94a3b8; cursor: not-allowed; }
         .login-note { font-size: 13px; color: #4a5b6e; text-align: center; margin-top: 16px; font-weight: 600; }
@@ -29,7 +29,6 @@
         .user-bar .info .nm { font-size: 16px; font-weight: 800; }
         .user-bar .info .un { font-size: 13px; font-weight: 600; opacity: 0.95; }
         .user-bar .btn-logout { background: #ffb347; color: #1e2b3c; border: none; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; }
-        .user-bar .btn-logout:active { background: #f59e0b; }
 
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 18px; font-size: 14px; border: 1px solid #e2e8f0; }
         .info-item { display: flex; justify-content: space-between; background: #fff; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
@@ -81,7 +80,6 @@
 </head>
 <body>
 
-<!-- ==================== صفحه ورود ==================== -->
 <div id="loginScreen" class="container">
     <div class="login-card">
         <h1>🔐 ورود به سامانه ارزیابی</h1>
@@ -95,7 +93,6 @@
     </div>
 </div>
 
-<!-- ==================== صفحه ارزیابی ==================== -->
 <div id="evalScreen" class="container" style="display:none;">
     <h1>فرم اعتباربخشی خوابگاه پسرانه درگز</h1>
     <div class="subtitle">مرکز آموزش عالی فوریت‌های پزشکی</div>
@@ -127,19 +124,17 @@
 
     <div class="hint">⚠️ در صورت مغایرت بین خوداظهاری و نمره ارزیاب، وارد کردن «علت مغایرت» الزامی است.</div>
 
-    <button id="excelBtn" class="btn-excel" onclick="exportExcel()">📊 دانلود فایل اکسل حرفه‌ای</button>
+    <button id="excelBtn" class="btn-excel" onclick="exportExcel()">📊 دانلود فایل اکسل</button>
 
     <div class="footer">سامانه اعتباربخشی خوابگاه دانشجویی — نسخه ارزیاب درگز</div>
 </div>
 
 <script>
-// ============ ارزیاب‌ها ============
 const EVALUATORS = [
     { name: 'بهزاد سرداری', role: 'رئیس اداره خوابگاه‌ها' },
     { name: 'میثم نقوی مقدم', role: 'مسئول خوابگاه برادران' }
 ];
 
-// ============ شاخص‌های خوابگاه مجردی — درگز ============
 const SECTIONS = [
     { title: '۱- استحکام بنا', weight: '۱۰۰ امتیاز', items: [
         { sub: '۱-۱ تأیید فنی ساختمان', w: 5, self: 0, options: [{label:'ندارد', value:0}, {label:'دارد', value:4}] },
@@ -365,7 +360,6 @@ function onScoreChange(select) {
         select.classList.add('empty');
         card.classList.remove('discrepancy');
         reasonInput.classList.remove('active');
-        reasonInput.required = false;
         reasonInput.value = '';
         calculateAllTotals();
         return;
@@ -419,40 +413,29 @@ function formatNumber(num) {
     return parts.join('.');
 }
 
-// ============ خروجی اکسل حرفه‌ای ============
+// ============ خروجی اکسل با استایل ============
 function exportExcel() {
-    if (!currentEvaluator) {
-        alert('لطفاً ابتدا وارد سامانه شوید.');
-        return;
-    }
+    if (!currentEvaluator) { alert('لطفاً ابتدا وارد سامانه شوید.'); return; }
 
-    // بررسی خالی بودن نمرات
     let unfilled = 0;
-    document.querySelectorAll('.score-select').forEach(sel => {
-        if (sel.value === '') unfilled++;
-    });
+    document.querySelectorAll('.score-select').forEach(sel => { if (sel.value === '') unfilled++; });
     if (unfilled > 0) {
         if (!confirm(`⚠️ ${unfilled} مورد از نمرات ارزیاب انتخاب نشده است. ادامه می‌دهید؟`)) return;
     }
 
-    // بررسی علت مغایرت
     let isValid = true;
     const missing = [];
     document.querySelectorAll('.item-card.discrepancy').forEach(card => {
-        const reasonInput = card.querySelector('.reason-input');
-        if (!reasonInput.value.trim()) {
+        const r = card.querySelector('.reason-input');
+        if (!r.value.trim()) {
             isValid = false;
-            reasonInput.style.borderColor = '#d32f2f';
-            reasonInput.style.backgroundColor = '#ffebee';
+            r.style.borderColor = '#d32f2f';
+            r.style.backgroundColor = '#ffebee';
             missing.push(card.querySelector('.item-title span')?.textContent || '');
         }
     });
-    if (!isValid) {
-        alert('لطفاً برای موارد مغایرت، علت را وارد کنید:\n' + missing.join('\n'));
-        return;
-    }
+    if (!isValid) { alert('لطفاً برای موارد مغایرت، علت را وارد کنید:\n' + missing.join('\n')); return; }
 
-    // جمع‌آوری داده‌ها
     const scores = [];
     let grandTotal = 0;
     document.querySelectorAll('.score-select').forEach(sel => {
@@ -469,19 +452,67 @@ function exportExcel() {
 
     const dateStr = new Date().toLocaleDateString('fa-IR');
 
-    // ===== ساخت Workbook =====
-    const wb = XLSX.utils.book_new();
+    // ===== استایل‌های مشترک =====
+    const titleStyle = {
+        font: { name: 'B Nazanin', sz: 16, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1E3A5F' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: { top: {style:'thin',color:{rgb:'1E3A5F'}}, bottom: {style:'thin',color:{rgb:'1E3A5F'}}, left: {style:'thin',color:{rgb:'1E3A5F'}}, right: {style:'thin',color:{rgb:'1E3A5F'}} }
+    };
+    const headerStyle = {
+        font: { name: 'B Nazanin', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1E3A5F' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: { top: {style:'thin',color:{rgb:'CBD5E1'}}, bottom: {style:'thin',color:{rgb:'CBD5E1'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
+    const infoLabelStyle = {
+        font: { name: 'B Nazanin', sz: 11, bold: true, color: { rgb: '1E3A5F' } },
+        fill: { fgColor: { rgb: 'E8F0FE' } },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        border: { top: {style:'thin',color:{rgb:'CBD5E1'}}, bottom: {style:'thin',color:{rgb:'CBD5E1'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
+    const infoValueStyle = {
+        font: { name: 'B Nazanin', sz: 11, bold: false, color: { rgb: '1E2B3C' } },
+        alignment: { horizontal: 'right', vertical: 'center' },
+        border: { top: {style:'thin',color:{rgb:'CBD5E1'}}, bottom: {style:'thin',color:{rgb:'CBD5E1'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
+    const cellStyle = {
+        font: { name: 'B Nazanin', sz: 10, color: { rgb: '1E2B3C' } },
+        alignment: { horizontal: 'right', vertical: 'center', wrapText: true },
+        border: { top: {style:'thin',color:{rgb:'CBD5E1'}}, bottom: {style:'thin',color:{rgb:'CBD5E1'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
+    const centerCellStyle = {
+        font: { name: 'B Nazanin', sz: 10, color: { rgb: '1E2B3C' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: { top: {style:'thin',color:{rgb:'CBD5E1'}}, bottom: {style:'thin',color:{rgb:'CBD5E1'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
+    const discrepancyStyle = {
+        font: { name: 'B Nazanin', sz: 10, color: { rgb: 'B45309' } },
+        fill: { fgColor: { rgb: 'FFF9E6' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: { top: {style:'thin',color:{rgb:'E2B04A'}}, bottom: {style:'thin',color:{rgb:'E2B04A'}}, left: {style:'thin',color:{rgb:'E2B04A'}}, right: {style:'thin',color:{rgb:'E2B04A'}} }
+    };
+    const sumRowStyle = {
+        font: { name: 'B Nazanin', sz: 11, bold: true, color: { rgb: '1E3A5F' } },
+        fill: { fgColor: { rgb: 'D9E8F5' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: { top: {style:'medium',color:{rgb:'1E3A5F'}}, bottom: {style:'medium',color:{rgb:'1E3A5F'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
+    const grandTotalStyle = {
+        font: { name: 'B Nazanin', sz: 13, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1E3A5F' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: { top: {style:'medium',color:{rgb:'0B2A44'}}, bottom: {style:'medium',color:{rgb:'0B2A44'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+    };
 
-    // ---- شیت ۱: فرم ارزیابی ----
+    // ============ شیت ۱: فرم ارزیابی ============
     const ws1Data = [];
-
-    // سربرگ عنوان
-    ws1Data.push(['گزارش ارزیابی خوابگاه پسرانه فوریت‌های پزشکی درگز']);
-    ws1Data.push([]);
-    ws1Data.push(['نام دانشگاه:', 'مرکز آموزش عالی فوریت‌های پزشکی', '', 'تاریخ:', dateStr]);
-    ws1Data.push(['نام خوابگاه:', 'خوابگاه پسرانه درگز', '', 'نوع:', 'مجردی — پسرانه']);
-    ws1Data.push(['نام ارزیاب:', currentEvaluator.name, '', 'سمت:', currentEvaluator.role]);
-    ws1Data.push([]);
+    ws1Data.push(['گزارش ارزیابی خوابگاه پسرانه فوریت‌های پزشکی درگز', '', '', '', '', '', '']);
+    ws1Data.push(['', '', '', '', '', '', '']);
+    ws1Data.push(['نام دانشگاه:', 'مرکز آموزش عالی فوریت‌های پزشکی', '', 'تاریخ:', dateStr, '', '']);
+    ws1Data.push(['نام خوابگاه:', 'خوابگاه پسرانه درگز', '', 'نوع:', 'مجردی — پسرانه', '', '']);
+    ws1Data.push(['نام ارزیاب:', currentEvaluator.name, '', 'سمت:', currentEvaluator.role, '', '']);
+    ws1Data.push(['', '', '', '', '', '', '']);
     ws1Data.push(['ردیف', 'عنوان شاخص', 'وزن', 'خوداظهاری', 'نمره ارزیاب', 'امتیاز وزنی', 'علت مغایرت']);
 
     let rowNum = 1;
@@ -497,70 +528,71 @@ function exportExcel() {
         ]);
     });
 
-    ws1Data.push([]);
+    ws1Data.push(['', '', '', '', '', '', '']);
     ws1Data.push(['', 'جمع کل امتیاز (از ۱۰۰۰):', '', '', '', grandTotal, '']);
-    ws1Data.push([]);
-    ws1Data.push([]);
-    ws1Data.push(['', 'امضای ارزیاب:', '', '', 'تاریخ:', dateStr]);
-    ws1Data.push(['', currentEvaluator.name, '', '', '']);
-    ws1Data.push(['', currentEvaluator.role, '', '', '']);
+    ws1Data.push(['', '', '', '', '', '', '']);
+    ws1Data.push(['', '', '', '', '', '', '']);
+    ws1Data.push(['', 'امضای ارزیاب:', '', 'تاریخ:', dateStr, '', '']);
+    ws1Data.push(['', currentEvaluator.name, '', '', '', '', '']);
+    ws1Data.push(['', currentEvaluator.role, '', '', '', '', '']);
 
     const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
-
-    // تنظیم عرض ستون‌ها
     ws1['!cols'] = [
-        { wch: 6 },   // ردیف
-        { wch: 50 },  // عنوان
-        { wch: 8 },   // وزن
-        { wch: 12 },  // خوداظهاری
-        { wch: 12 },  // نمره ارزیاب
-        { wch: 14 },  // امتیاز وزنی
-        { wch: 35 }   // علت مغایرت
+        { wch: 6 }, { wch: 55 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 13 }, { wch: 35 }
     ];
-
-    // ادغام سلول‌ها
+    ws1['!rows'] = [{ hpt: 30 }];
     ws1['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },   // عنوان اصلی
-        { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },   // نام دانشگاه
-        { s: { r: 4, c: 1 }, e: { r: 4, c: 2 } },   // نام خوابگاه
-        { s: { r: 5, c: 1 }, e: { r: 5, c: 2 } },   // نام ارزیاب
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+        { s: { r: 2, c: 1 }, e: { r: 2, c: 2 } },
+        { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },
+        { s: { r: 4, c: 1 }, e: { r: 4, c: 2 } }
     ];
 
-    // ===== استایل‌ها (با استفاده از کتابخانه xlsx-js-style در صورت وجود) =====
-    // اگر کتابخانه استایل موجود نبود، فقط داده‌ها به‌درستی ذخیره می‌شوند.
+    // اعمال استایل به سلول‌های شیت ۱
+    const range1 = XLSX.utils.decode_range(ws1['!ref']);
+    for (let R = range1.s.r; R <= range1.e.r; ++R) {
+        for (let C = range1.s.c; C <= range1.e.c; ++C) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws1[addr]) continue;
+            if (R === 0) {
+                ws1[addr].s = titleStyle;
+            } else if (R === 6) {
+                ws1[addr].s = headerStyle;
+            } else if (R === 2 || R === 3 || R === 4) {
+                if (C === 0 || C === 3) ws1[addr].s = infoLabelStyle;
+                else ws1[addr].s = infoValueStyle;
+            } else if (R >= 7 && R <= 6 + scores.length) {
+                const s = scores[R - 7];
+                const hasDiff = s.reason && s.reason !== '';
+                if (hasDiff) {
+                    ws1[addr].s = discrepancyStyle;
+                } else if (C === 1) {
+                    ws1[addr].s = cellStyle;
+                } else {
+                    ws1[addr].s = centerCellStyle;
+                }
+            } else if (R === 8 + scores.length) {
+                ws1[addr].s = grandTotalStyle;
+            } else if (R === 11 + scores.length) {
+                ws1[addr].s = infoLabelStyle;
+            } else if (R === 12 + scores.length || R === 13 + scores.length) {
+                ws1[addr].s = infoValueStyle;
+            }
+        }
+    }
 
-    // ---- شیت ۲: خلاصه بخش‌ها ----
+    // ============ شیت ۲: خلاصه بخش‌ها ============
     const ws2Data = [];
-    ws2Data.push(['خلاصه امتیازات به تفکیک بخش']);
-    ws2Data.push([]);
+    ws2Data.push(['خلاصه امتیازات به تفکیک بخش', '', '', '', '', '']);
+    ws2Data.push(['', '', '', '', '', '']);
     ws2Data.push(['بخش', 'عنوان', 'حداکثر امتیاز', 'امتیاز کسب‌شده', 'درصد', 'وضعیت']);
 
     const sectionMax = [100, 136, 80, 64, 174, 184, 204, 58];
-    const sectionTitles = [
-        'استحکام بنا',
-        'تأسیسات مکانیکی',
-        'تأسیسات برق',
-        'آسانسور و خروج اضطراری',
-        'ایمنی و بهداشت',
-        'طراحی خوابگاه',
-        'امکانات رفاهی',
-        'امنیت و مدیریت'
-    ];
+    const sectionTitles = ['استحکام بنا', 'تأسیسات مکانیکی', 'تأسیسات برق', 'آسانسور و خروج اضطراری', 'ایمنی و بهداشت', 'طراحی خوابگاه', 'امکانات رفاهی', 'امنیت و مدیریت'];
 
-    // محاسبه امتیاز هر بخش
-    const sectionScores = [];
-    let idx = 0;
-    SECTIONS.forEach((sec) => {
-        let sum = 0;
-        sec.items.forEach(item => {
-            const sel = document.querySelectorAll('.accordion')[idx].querySelectorAll('.score-select');
-            // find the correct select by matching sub
-        });
-    });
-
-    // محاسبه مستقیم از روی DOM
     const accs = document.querySelectorAll('.accordion');
-    accs.forEach((acc, i) => {
+    const sectionScores = [];
+    accs.forEach((acc) => {
         let sum = 0;
         acc.querySelectorAll('.score-select').forEach(sel => {
             const w = parseFloat(sel.dataset.weight) || 0;
@@ -578,34 +610,49 @@ function exportExcel() {
         if (percent >= 0.8) status = 'عالی';
         else if (percent >= 0.6) status = 'خوب';
         else if (percent >= 0.4) status = 'متوسط';
-        ws2Data.push([
-            i + 1,
-            title,
-            max,
-            Math.round(score * 100) / 100,
-            (percent * 100).toFixed(1) + '%',
-            status
-        ]);
+        ws2Data.push([i + 1, title, max, Math.round(score * 100) / 100, (percent * 100).toFixed(1) + '%', status]);
     });
 
-    ws2Data.push([]);
+    ws2Data.push(['', '', '', '', '', '']);
     ws2Data.push(['', 'جمع کل', 1000, Math.round(grandTotal * 100) / 100, ((grandTotal / 1000) * 100).toFixed(1) + '%', '']);
 
     const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
-    ws2['!cols'] = [
-        { wch: 6 },
-        { wch: 35 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 10 },
-        { wch: 12 }
-    ];
+    ws2['!cols'] = [{ wch: 6 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 12 }];
+    ws2['!rows'] = [{ hpt: 30 }];
     ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
 
-    // ---- شیت ۳: اطلاعات خوابگاه ----
+    const range2 = XLSX.utils.decode_range(ws2['!ref']);
+    for (let R = range2.s.r; R <= range2.e.r; ++R) {
+        for (let C = range2.s.c; C <= range2.e.c; ++C) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws2[addr]) continue;
+            if (R === 0) ws2[addr].s = titleStyle;
+            else if (R === 2) ws2[addr].s = headerStyle;
+            else if (R >= 3 && R <= 10) {
+                ws2[addr].s = (C === 1) ? cellStyle : centerCellStyle;
+                if (C === 5) {
+                    const status = ws2Data[R][5];
+                    let fillColor = 'FFC7CE', fontColor = '9C0006';
+                    if (status === 'عالی') { fillColor = 'C6EFCE'; fontColor = '006100'; }
+                    else if (status === 'خوب') { fillColor = 'BDD7EE'; fontColor = '1E3A5F'; }
+                    else if (status === 'متوسط') { fillColor = 'FFEB9C'; fontColor = '9C6500'; }
+                    ws2[addr].s = {
+                        font: { name: 'B Nazanin', sz: 10, bold: true, color: { rgb: fontColor } },
+                        fill: { fgColor: { rgb: fillColor } },
+                        alignment: { horizontal: 'center', vertical: 'center' },
+                        border: { top: {style:'thin',color:{rgb:'CBD5E1'}}, bottom: {style:'thin',color:{rgb:'CBD5E1'}}, left: {style:'thin',color:{rgb:'CBD5E1'}}, right: {style:'thin',color:{rgb:'CBD5E1'}} }
+                    };
+                }
+            } else if (R === 12) {
+                ws2[addr].s = grandTotalStyle;
+            }
+        }
+    }
+
+    // ============ شیت ۳: اطلاعات خوابگاه ============
     const ws3Data = [
-        ['اطلاعات خوابگاه'],
-        [],
+        ['اطلاعات خوابگاه', ''],
+        ['', ''],
         ['نام دانشگاه', 'مرکز آموزش عالی فوریت‌های پزشکی'],
         ['نام خوابگاه', 'خوابگاه پسرانه درگز'],
         ['نوع کاربری', 'مجردی — پسرانه'],
@@ -616,25 +663,38 @@ function exportExcel() {
         ['زیرمجموعه', 'اقماری'],
         ['نوع طراحی', 'راهرویی (غیرسوئیتی)'],
         ['موقعیت', 'داخل پردیس دانشکده'],
-        [],
+        ['', ''],
         ['ارزیاب اول', 'بهزاد سرداری — رئیس اداره خوابگاه‌ها'],
         ['ارزیاب دوم', 'میثم نقوی مقدم — مسئول خوابگاه برادران'],
         ['تاریخ ارزیابی', dateStr]
     ];
     const ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
-    ws3['!cols'] = [{ wch: 25 }, { wch: 50 }];
+    ws3['!cols'] = [{ wch: 25 }, { wch: 55 }];
+    ws3['!rows'] = [{ hpt: 30 }];
     ws3['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
 
-    // افزودن شیت‌ها
+    const range3 = XLSX.utils.decode_range(ws3['!ref']);
+    for (let R = range3.s.r; R <= range3.e.r; ++R) {
+        for (let C = range3.s.c; C <= range3.e.c; ++C) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws3[addr]) continue;
+            if (R === 0) ws3[addr].s = titleStyle;
+            else if (R >= 2 && R <= 15) {
+                ws3[addr].s = (C === 0) ? infoLabelStyle : infoValueStyle;
+            }
+        }
+    }
+
+    // ===== افزودن شیت‌ها و ذخیره =====
+    const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, 'فرم ارزیابی');
     XLSX.utils.book_append_sheet(wb, ws2, 'خلاصه بخش‌ها');
     XLSX.utils.book_append_sheet(wb, ws3, 'اطلاعات خوابگاه');
 
-    // دانلود
     const filename = `ارزیابی_خوابگاه_درگز_${dateStr.replace(/\//g, '-')}.xlsx`;
     XLSX.writeFile(wb, filename);
 
-    alert(`✅ فایل اکسل با موفقیت ساخته و دانلود شد.\n\nنام فایل: ${filename}`);
+    alert(`✅ فایل اکسل ساخته و دانلود شد.\n\nنام فایل: ${filename}`);
 }
 </script>
 </body>
